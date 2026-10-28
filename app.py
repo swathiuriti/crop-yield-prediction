@@ -1,40 +1,53 @@
+
 from flask import Flask, render_template, request
-import os
+from pathlib import Path
 import pandas as pd
 import joblib
 
 app = Flask(__name__)
-MODEL_PATH = os.path.join("models", "crop_yield_model.joblib")
-DATA_PATH = os.path.join("data", "crop_yield.csv")
 
-def load_model():
-    if os.path.exists(MODEL_PATH):
-        return joblib.load(MODEL_PATH)
-    return None
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR / "models" / "crop_yield_model.joblib"
+DATA_PATH = BASE_DIR / "data" / "crop_yield.csv"
 
-def get_options():
-    if os.path.exists(DATA_PATH):
-        try:
-            df = pd.read_csv(DATA_PATH)
-            return sorted(df["Area"].dropna().astype(str).unique()), sorted(df["Item"].dropna().astype(str).unique())
-        except Exception:
-            pass
-    return (
-        ["India", "United States", "Brazil", "Australia"],
-        ["Rice", "Wheat", "Maize", "Potatoes", "Soybeans"]
-    )
+# Load the model once when the application starts, not on every request.
+model = None
+try:
+    if MODEL_PATH.exists():
+        model = joblib.load(MODEL_PATH)
+        print("Crop yield model loaded successfully.")
+    else:
+        print(f"Model file not found: {MODEL_PATH}")
+except Exception as exc:
+    print(f"Model loading failed: {exc}")
+
+# Load dropdown options once instead of reading the CSV on every request.
+try:
+    if DATA_PATH.exists():
+        df_options = pd.read_csv(DATA_PATH, usecols=["Area", "Item"])
+        areas = sorted(df_options["Area"].dropna().astype(str).unique().tolist())
+        crops = sorted(df_options["Item"].dropna().astype(str).unique().tolist())
+        del df_options
+    else:
+        raise FileNotFoundError("Dataset not found")
+except Exception as exc:
+    print(f"Could not load dropdown options: {exc}")
+    areas = ["India", "United States", "Brazil", "Australia"]
+    crops = ["Rice", "Wheat", "Maize", "Potatoes", "Soybeans"]
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     prediction = None
     error = None
-    areas, crops = get_options()
-    model = load_model()
 
     if request.method == "POST":
         try:
             if model is None:
-                raise ValueError("The model is not trained yet. Add the dataset and run train_model.py first.")
+                raise ValueError(
+                    "The trained model could not be loaded. "
+                    "Please check the deployment logs."
+                )
 
             area = request.form["area"]
             crop = request.form["crop"]
@@ -51,7 +64,9 @@ def index():
                 "pesticides_tonnes": pesticides,
                 "avg_temp": temperature
             }])
+
             predicted_yield = float(model.predict(input_df)[0])
+
             prediction = {
                 "value": f"{predicted_yield:,.2f}",
                 "unit": "hg/ha",
@@ -59,11 +74,18 @@ def index():
                 "crop": crop,
                 "year": year
             }
+
         except Exception as exc:
             error = str(exc)
 
-    return render_template("index.html", areas=areas, crops=crops,
-                           prediction=prediction, error=error)
+    return render_template(
+        "index.html",
+        areas=areas,
+        crops=crops,
+        prediction=prediction,
+        error=error
+    )
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
