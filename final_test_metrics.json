@@ -1,0 +1,20 @@
+{
+    "selected_model": "Extra Trees",
+    "test_years": [
+        2010,
+        2011,
+        2012,
+        2013
+    ],
+    "test_metrics": {
+        "R2": 0.9567,
+        "MAE": 10081.83,
+        "RMSE": 19808.88
+    },
+    "baseline_test_metrics": {
+        "R2": -0.286,
+        "MAE": 65500.71,
+        "RMSE": 108015.35
+    },
+    "mae_improvement_percent": 84.61
+}

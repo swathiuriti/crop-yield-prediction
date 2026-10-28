@@ -1,0 +1,8 @@
+Model,R2,MAE,RMSE,Final_Test_R2,Final_Test_MAE,Final_Test_RMSE
+Median Baseline,-0.2669,61446.55,101793.38,,,
+Linear Regression,0.7338,31355.41,46656.28,,,
+KNN,0.9541,10200.81,19385.48,,,
+Gradient Boosting,0.8155,24557.55,38844.75,,,
+Random Forest,0.9639,8852.8,17190.88,,,
+Extra Trees,0.9683,8291.67,16089.83,0.9567,10081.83,19808.88
+Extra Trees Log,0.965,8734.19,16917.65,,,
